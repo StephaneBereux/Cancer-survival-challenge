@@ -1,7 +1,6 @@
 # Generic requirements
 numpy
 pandas
-collection
 
 # Gather the data
 mygene

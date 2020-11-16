@@ -1,156 +1,188 @@
 import numpy as np
 import pandas as pd
-import csv as csv
-import pdb as pdb
+import time as time
 
-#for gene names converting
+# for gene names converting
 import mygene as mg
 
-#for finding duplicates
-import collections
-
-#for data fetching
+# for data fetching
 import xenaPython as xena
 
-database_filename = "database_TCGA.csv"
 
-try:
-    pd.read_csv(database_filename)
-except:
-        
-
-    def get_codes(host, dataset, fields, data):
-        "get codes for enumerations"
-        codes = xena.field_codes(host, dataset, fields)
-        codes_idx = dict([(x['name'], x['code'].split('\t')) for x in codes if x['code'] is not None])
-        for i in range(len(fields)):
-            if fields[i] in codes_idx:
-                data[i] = [None if v == 'NaN' else codes_idx[fields[i]][int(v)] for v in data[i]]
-        return data
+def get_codes(host, dataset, fields, data):
+    "Get codes for enumerations."
+    codes = xena.field_codes(host, dataset, fields)
+    codes_idx = dict([(x['name'], x['code'].split('\t'))
+                      for x in codes if x['code'] is not None])
+    for i in range(len(fields)):
+        if fields[i] in codes_idx:
+            data[i] = [None if v == 'NaN' else codes_idx[fields[i]][int(v)]
+                       for v in data[i]]
+    return data
 
 
-    def get_fields(host, dataset, samples, fields):
-        "get field values"
-        data = xena.dataset_fetch(host, dataset, samples, fields)
-        return data
+def get_fields(host, dataset, samples, fields):
+    "Get field values."
+    fields = xena.dataset_fetch(host, dataset, samples, fields)
+    return fields
 
 
-    def get_fields_and_codes(host, dataset, samples, fields):
-        "get fields and resolve codes"
-        return get_codes( host, dataset, fields, get_fields( host, dataset, samples, fields))
+def get_fields_and_codes(host, dataset, samples, fields):
+    "Get fields and resolve codes."
+    return get_codes(host, dataset, fields,
+                     get_fields(host, dataset, samples, fields))
 
 
-    #### Gene expression data
-
-    dico_genes = mg.get_client("gene")
-    dico_genes.getgenes
-
-    hub = "https://gdc.xenahubs.net"
-    dataset = "TCGA-BRCA.htseq_fpkm-uq.tsv" #database url was found on the hub website
-    samples = xena.dataset_samples (hub, dataset, None)
-
-    ### To download specific genes
-
-    ##wave genes
-    #genes =["NCKAP1","CYFIP2", "NCKAP1L", "WASF2", "ABI3", "WASF3", "ABI1", "ABI2", "CYFIP1", "WASF1", "BRK1"] #enter the genes of interest
-    ##Arp2-3 genes
-    #genes = ["ACTR2", "ACTR3", "ARPC1A", "ARPC2", "ARPC3", "ARPC4", "ARPC5", "ACTR3B", "ARPC1B", "ARPC5L"]
-    ##Arpin
-    #genes = ["Arpin"]
-
-
-    ## All genes available
+def available_genes(hub, dataset, fields):
+    """ Returns all the non-duplicated genes in the dataset."""
 
     genes = xena.dataset_field(hub, dataset)[:-1]
-    fields = ["sampleID"]
 
     for i in range(len(genes)):
-        genes[i] = genes[i].split(".")[0] #What is the meaning of the number after the point ?
-        
-    #Convert gene names into their symbol
-    genes_1 = []
-    dico_genes = mg.get_client("gene").getgenes(genes,'symbol') #Enlever les chiffres après le point dans le ENSG : create duplicates
-    genes_1 = [d.get('symbol') for d in dico_genes]
-    genes_1 = [x for x in genes_1 if x is not None]
+        genes[i] = genes[i].split(".")[0]
+    # removing the digits after the ENSG creates duplicates
 
-    #Eliminate the duplicates in the gene names
+    # Convert gene names into their symbol
+    dico_genes = mg.get_client("gene")
+    dico_genes.getgenes
+    dico_genes = mg.get_client("gene").getgenes(genes, 'symbol')
+
+    gene_symbols = [d.get('symbol') for d in dico_genes]
+    gene_symbols = [x for x in gene_symbols if x is not None]
+
+    # Eliminate the duplicates in the gene names
     genes_set = set()
-    genes_diff = [x for x in genes_1 if x not in genes_set and not genes_set.add(x)]
-    print('len(genes_diff )',len(genes_diff))
-    print('len(genes_1) ',len(genes_1))
+    distinct_genes = [x for x in gene_symbols
+                      if x not in genes_set and not genes_set.add(x)]
+    genes_test = list(genes_set)
+    assert genes_set == set(distinct_genes)
 
-    ######
-    expressions_0 = np.array([])
+    return distinct_genes
 
-    for i in range(1): # Maybe to modify TODO
+
+def gather_expression_data(hub, dataset, samples, genes):
+    """Collect the expression data from Xena Hub."""
+    expression_data = np.array([])
+    n_genes = len(genes)
+    t_0 = time.time()
+    # We collect the expression data 100 genes by 100 genes
+    for i in range(int(n_genes/100) + 1):
         if i % 20 == 0:
-            print(i)
-        expressions_0 = np.append(expressions_0,np.array(xena.dataset_gene_probe_avg(hub, dataset, samples, genes_diff[min(i*100, len(genes_diff)) : min((i+1)*100, len(genes_diff))])))
-        print(xena.dataset_gene_probe_avg(hub, dataset, samples, genes_diff[min(i*100, len(genes_diff)) : min((i+1)*100, len(genes_diff))]))
-        #expressions_0.extend(xena.dataset_gene_probe_avg(hub, dataset, samples, genes_diff[min(i*100, len(genes_diff)) : min((i+1)*100, len(genes_diff))]))
-    #expressions_0 = xena.dataset_gene_probe_avg(hub, dataset, samples, genes)
+            print('%i genes collected in %s s'
+                  % (100*i, str(time.time() - t_0)))
+        lower_bound = min(i*100, n_genes)
+        upper_bound = min((i+1)*100, n_genes)
+        genes_batch = genes[lower_bound: upper_bound]
+        new_expression_batch = np.array(xena.dataset_gene_probe_avg(
+                                  hub, dataset, samples, genes_batch))
+        expression_data = np.append(expression_data, new_expression_batch)
+    return expression_data.tolist()
 
-    expressions_1 = expressions_0.tolist()
 
-    with open('expressions_1_partial', 'w') as myfile:
-        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-        wr.writerow(expressions_1)    
-        
-    values = get_fields_and_codes(hub, dataset, samples, fields) # list of lists
-
-    genes_dict_for_df = dict(zip(fields, values)) #dict where we add the gene expression and the sample ids
-
-    with open('dict_partial.csv', 'w') as csv_file:
-        writer = csv.writer(csv_file)
-        for key, value in genes_dict_for_df.items():
-            writer.writerow([key, value])
-        
-    for dico in expressions_1:
+def match_id_value(hub, dataset, samples, fields, expression_data):
+    """Returns a dict with the expression data associated to each gene."""
+    values = get_fields_and_codes(hub, dataset, samples, fields)
+    genes_dict = dict(zip(fields, values))
+    for dico in expression_data:
         if(dico["gene"] != None):
             label = "expression" + dico["gene"]
-            scores = dico["scores"][0] #Problem with the filfulling of the scores of expression_0 : it needs probably the usual names of the genes (like Arpin) instead of the scientific names (like ENSG0000000.03) 
+            scores = dico["scores"][0]
             if(len(scores) > 0):
-                genes_dict_for_df[label] = scores
-                
-    #### Survival data
+                genes_dict[label] = scores
+    df_genes_expression = pd.DataFrame(data=genes_dict)
+    return df_genes_expression
 
+
+def get_survival_data(hub, dataset, samples):
+    """Returns a Dataframe containing sampleID and survival value."""
     dataset = "TCGA-BRCA.survival.tsv"
-    fields = ['_TIME_TO_EVENT', "_EVENT", "sampleID"] #event is 1 if the patient has died or 0 if he was censored (lost...)
-    #TODO
-    # As in pancan, there are normal samples in tcga which should probably be removed. _sample_type will
-    # identify normals. _study will identify tcga vs. gtex vs. target.
-    values = get_fields_and_codes(hub, dataset, samples, fields) # list of lists
-    survival_dict_for_df = dict(zip(fields, values)) # index by phenotype
-    survival_dict_for_df["survival"] = survival_dict_for_df.pop("_TIME_TO_EVENT") 
-    survival_dict_for_df["event"] = survival_dict_for_df.pop("_EVENT")
 
-    #### Phenotypes data
+    #OS is 1 if the patient has died or 0 if he was censored (lost...)
+    fields = ['OS', "OS.time", "sampleID"]
+    values = get_fields_and_codes(hub, dataset, samples, fields)
+    survival_dict = dict(zip(fields, values)) # index by phenotype
+    survival_dict["survival"] = survival_dict.pop("OS.time")
+    survival_dict["death"] = survival_dict.pop("OS")
+    df_survival = pd.DataFrame(data=survival_dict)
 
+
+def get_expression_data(hub, dataset, samples):
+    """Returns a Dataframe containing sampleID and expression data."""
+    fields = ["sampleID"]
+    genes = available_genes(hub, dataset, fields)
+    genes = genes[:90]
+    expression_data = gather_expression_data(hub, dataset, samples, genes)
+    df_genes_expression = match_id_value(hub, dataset,
+                                         samples, fields, expression_data)
+    return df_genes_expression
+
+# WARNING : this code is not used for the moment
+# There are normal (e.g. not tumoral) samples in TCGA
+# which should probably be removed. _sample_type will
+# identify normals. _study will identify TCGA vs. GTEX vs. TARGET.
+# Additionnaly, other co-variates, such as age, could be added
+
+def get_phenotype_data(hub, samples):
+    """Returns the sample type (normal vs. tumoral) of the tumor"""
     dataset = "TCGA-BRCA.GDC_phenotype.tsv"
-    fields = ['sample_type.samples', "sampleID"] 
-    values = get_fields_and_codes(hub, dataset, samples, fields) # list of lists
-    phenotype_dict_for_df = dict(zip(fields, values)) # index by phenotype
-    phenotype_dict_for_df["sample_type"] = phenotype_dict_for_df.pop('sample_type.samples')
+    fields = ['sample_type.samples', "sampleID"]
+    values = get_fields_and_codes(hub, dataset, samples, fields)
+    phenotype_dict = dict(zip(fields, values)) # index by phenotype
+    phenotype_dict["sample_type"] = phenotype_dict.pop('sample_type.samples')
+    df_phenotype = pd.DataFrame(data=phenotype_dict)
 
-    """I don't know if it's useful to remove the patients whose tumor is not a "Primary Tumor", like advised by Xena. The goal is to remove duplicates but I can't find duplicates"""
 
-    #### Merge data
+def remove_duplicates(df_total, df_phenotype):
+    """ Filter the duplicates (e.g. keep only the primary tumors)"""
+    df_total = pd.merge(df_total, df_phenotype) # merge also the phenotype data
+    df_total = df_total[df_total["sample_type"] == "Primary Tumor"]
+    df_total = df_total.drop(['sample_type'], axis=1)
+    return df_total
 
-    df_genes = pd.DataFrame(data=genes_dict_for_df)
-    df_survival = pd.DataFrame(data=survival_dict_for_df)
-    #df_phenotype = pd.DataFrame(data=phenotype_dict_for_df)
 
-    df = pd.merge(df_genes, df_survival) # merge the survival and genes data according to sampleID
-    #df = pd.merge(df, df_phenotype) #merge also the phenotype data
-
-    #df = df.convert_objects(convert_numeric=True)
+def merge_data(df_expression, df_survival, df_phenotype=None):
+    """Merge the expression data with the survival data."""
+    df = pd.merge(df_expression, df_survival) # Merge according to sampleID
     df = df.apply(pd.to_numeric, errors='coerce')
+    df = df[~pd.isna(df["survival"])][~pd.isna(df["death"])]
 
-    df = df[~pd.isna(df["survival"])][~pd.isna(df["event"])]
-    #df = df[df["sample_type"] == "Primary Tumor"] #keep only primary tumor to remove duplicate WARNING : check if name doesn't change if you use another dataset
-    #df = df.drop(['sampleID','sample_type'], axis=1) #remove identifier for analysis
+    # To remove duplicates and/or add supplementary phenotypical covariates
+    if df_phenotype != None:
+        df = remove_duplicates(df, df_phenotype)
 
-    df = df.drop('sampleID', axis=1) #remove identifier for analysis
+    df = df.drop('sampleID', axis=1) # remove identifier for analysis
+    return df
 
-    # Record the data
-    df.to_csv(database_filename )
+
+def download_data(database_filename):
+    """Download and preprocess the expression and survival data."""
+
+    # Transcriptomic data
+    hub = "https://gdc.xenahubs.net"
+    dataset = "TCGA-BRCA.htseq_fpkm-uq.tsv"
+    samples = xena.dataset_samples(hub, dataset, None)
+    df_expression = get_expression_data(hub, dataset, samples)
+
+    # Survival data
+    df_survival   = get_survival_data(hub, dataset, samples)
+
+    # Phenotype data
+    # df_phenotype = get_phenotype_data(hub, samples)
+
+    df_all = merge_data(genes_dict, df)
+    df_all.to_csv(database_filename, index=False)
+
+    return df_all
+
+
+def load_or_download(database_filename):
+    """Returns the database (either by loading it, or by download it)."""
+    try:
+        df = pd.read_csv(database_filename)
+    except:
+        df = download_data(database_filename)
+    return df
+
+if __name__ == '__main__':
+    database_filename = 'database_TCGA.csv'
+    load_or_download(database_filename)
