@@ -56,7 +56,8 @@ def available_genes(hub, dataset, fields):
     # if x not in genes_set and not genes_set.add(x)]
     # genes_test = list(genes_set)
     # assert genes_set == set(distinct_genes)
-
+    print("We collect the data for %s genes."
+          % str(len(distinct_genes)))
     return distinct_genes
 
 
