@@ -111,7 +111,6 @@ def get_expression_data(hub, dataset, samples):
     """Return a Dataframe containing sampleID and expression data."""
     fields = ["sampleID"]
     genes = available_genes(hub, dataset, fields)
-    genes = genes[:90]
     expression_data = gather_expression_data(hub, dataset, samples, genes)
     df_genes_expression = match_id_value(hub, dataset,
                                          samples, fields, expression_data)
