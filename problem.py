@@ -5,7 +5,8 @@ import time as time
 import os
 
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit
+from rampwf.score_types import BaseScoreType
 
 # for gene names converting
 import mygene as mg
@@ -13,6 +14,7 @@ import mygene as mg
 # for data fetching
 import xenaPython as xena
 
+problem_title = 'Breast cancer survival prediction'
 data_dir = 'data'
 
 def get_codes(host, dataset, fields, data):
@@ -192,29 +194,38 @@ def download_data(database_filename):
 
     df_all = merge_data(df_expression, df_survival)
     
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    database_path = os.path.join(data_dir, database_filename)
     filtered_df = filter_outliers(df_all)
-    filtered_df.to_csv(database_path, index=False)
-    return filtered_df
+    record_train_test(filtered_df)
+    return 
     
 
-def load_or_download(database_filename):
-    """Return the database (either by loading it, or by download it)."""
-    data_dir = 'data'
-    database_path = os.path.join(data_dir, database_filename)
+def check_data_exist(database_filename):
+    """Download the data if they didn't existed."""
     try:
         df = pd.read_csv(database_filename)
     except FileNotFoundError:
-        df = download_data(database_filename)
+        download_data(database_filename)
     return df
 
-def split_train_test(df):
+
+def record_train_test(df):
+    """Split and record the data."""
+    # Split
+    index_train, index_test = train_test_split(range(len(df)), test_size = 0.2, random_state=10)
+    df_train = df.loc[index_train].reset_index(drop = True)
+    df_test  = df.loc[index_test].reset_index(drop = True)
     
-    index_train, index_test = train_test_split( range(len(df)), test_size = 0.2, random_state=10)
-    data_train = df.loc[index_train].reset_index( drop = True )
-    data_test  = df.loc[index_test].reset_index( drop = True )
+    # Create the architecture to record the data
+    train_dir, test_dir = os.path.join(data_dir, 'train'), os.path.join(data_dir, 'test')
+    for directory in [data_dir, train_dir, test_dir]:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    
+    # Record the dataframes
+    train_path, test_path = os.path.join(train_dir, 'X.csv'), os.path.join(test_dir, 'X.csv')
+    df_train.to_csv(train_path, index=False)
+    df_test.to_csv(test_path, index=False)
+    return 
 
 
 def filter_outliers(df):
@@ -223,26 +234,11 @@ def filter_outliers(df):
     return df.drop(long_times).reset_index()
 
 
-def get_train_data():
-    """Return the training data."""
-    return
-
-def get_test_data():
-    """Return the test data."""
-    return
-
-
-problem_title = 'Breast cancer survival prediction'
-
-score_types = [
-    ConcordanceIndex(name='concordance_index'),
-    IntegratedBrierScore(name='integrated_brier_score')
-]
-
-
 def get_cv(X, y):
+    """Create cross-validation for the ramp test."""
+
     test = os.getenv('RAMP_TEST_MODE', 0)
-    n_splits = 8
+    n_splits = 4
     if test:
         n_splits = 2
     spliter = GroupShuffleSplit(n_splits=n_splits, test_size=.2,
@@ -259,38 +255,44 @@ def get_cv(X, y):
 
 
 def _read_data(path, dir_name):
-    DATA_HOME = path
-    X_df = pd.read_csv(os.path.join(DATA_HOME,
-                                    DATA_PATH,
-                                    dir_name, 'X.csv.gz'))
-    X_df.iloc[:, :-1] *= 1e12  # scale data to avoid tiny numbers
-
-    # add a new column lead_field where you will insert a path to the
-    # lead_field for each subject
-    lead_field_files = os.path.join(DATA_HOME, DATA_PATH, '*L.npz')
-    lead_field_files = sorted(glob.glob(lead_field_files))
-
-    lead_subject = {}
-    # add a row with the path to the correct LeadField to each subject
-    for key in np.unique(X_df['subject']):
-        path_L = [s for s in lead_field_files if key + '_L' in s][0]
-        lead_subject[key] = path_L
-    X_df['L_path'] = X_df.apply(lambda row: lead_subject[row.subject], axis=1)
-
-    y = sparse.load_npz(
-        os.path.join(DATA_HOME, DATA_PATH, dir_name, 'target.npz')).toarray()
-
-        return X_df, y
+    path_to_database = os.path.join(path, data_dir, dir_name, 'X.csv')
+    check_data_exist(path_to_database)
+    X = pd.read_csv(path_to_database)
+    y = df.pop('time')
+    return X, y
 
 
 def get_train_data(path="."):
+    """Return the train data."""
     return _read_data(path, 'train')
 
 
 def get_test_data(path="."):
+    """Return the test data."""
     return _read_data(path, 'test')
 
+class ConcordanceIndex(BaseScoreType):
+    is_lower_the_better = False
+    minimum = 0.0
+    maximum = 1.0
 
+    def __init__(self, name='concordance_index', precision=4):
+        self.name = name
+        self.precision = precision
+
+    def __call__(self, y_true_proba, y_proba):
+        mask = ~np.any(np.isnan(y_proba), axis=1)
+
+        score = concordance_index(y_true_proba[mask],
+                                  y_proba[mask],
+                                  average='samples')
+        return score
+
+
+score_types = [
+    ConcordanceIndex(name='concordance_index'),
+    IntegratedBrierScore(name='integrated_brier_score')
+]
 
 #if __name__ == '__main__':
 #    database_filename = 'test_database_TCGA.csv'
