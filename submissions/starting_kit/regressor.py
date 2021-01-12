@@ -8,7 +8,7 @@ class Regressor(BaseEstimator, RegressorMixin):
         pca = PCA(n_components=10)
         regressor = LinearRegression(n_jobs=-1)
         self.regr = Pipeline([('pca', pca), ('regressor', regressor)])
-        return self
+        return 
 
     def fit(self, X, y=None):
         self.regr.fit(X)
