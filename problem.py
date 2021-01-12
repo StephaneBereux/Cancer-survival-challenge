@@ -12,7 +12,7 @@ import rampwf as rw
 from rampwf.score_types import BaseScoreType
 
 # scoring
-from pysurvival.utils.metrics import integrated_brier_score, concordance_index
+# from pysurvival.utils.metrics import integrated_brier_score, concordance_index
 from sksurv.metrics import concordance_index_ipcw
 
 # for gene names converting
