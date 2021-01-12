@@ -34,9 +34,8 @@ def get_cv(X, y):
     n_splits = 4
     if test:
         n_splits = 2
-    spliter = GroupShuffleSplit(n_splits=n_splits, test_size=.2,
-                            random_state=42)
-    non_censored = y['death'] # Contains the content of the 'death' column, to keep track of which patient was censored
+    spliter = GroupShuffleSplit(n_splits=n_splits, test_size=.2, random_state=42)
+    non_censored = y[:,0] # Contains the content of the 'death' column, to keep track of which patient was censored
     splits = spliter.split(X, y, non_censored)
     return splits
 
@@ -65,7 +64,7 @@ def _get_y_tot(path="."):
     """Return the concatenation of the train and the test labels."""
     _, y_train = get_train_data()
     _, y_test = get_test_data()
-    y_tot = pd.concat([y_train, y_test], ignore_index=True)
+    y_tot = np.vstack((y_train, y_test))
     return y_tot
 
 
@@ -78,18 +77,16 @@ class ConcordanceIndex(BaseScoreType):
         minimum = 0.0
         maximum = 1.0
         y_tot = _get_y_tot()
-        self.max_time = y_tot['time'].max() # Max survival time in the whole dataset (same as in the train dataset)
+        self.max_time = y_tot[1].max() # Max survival time in the whole dataset (same as in the train dataset)
         _, y_train = get_train_data()
         self.struct_y_train = self._to_structured_array(y_train) # To estimate the censoring distribution
 
 
-    def _to_structured_array(self, y_df):
+    def _to_structured_array(self, y):
         """Create a structured array containing the event and the time to the event."""
-        E = y_df['death'].to_numpy().astype(bool)
-        y = y_df['time'].to_numpy()
-        w = np.column_stack((E, y))
-        w = w.ravel().view([('event', w[0].dtype), ('time', y.dtype)]).astype('bool, <i8')
-        return w
+        # y[0] = event, y[1] = time
+        struct_y = y.ravel().view([('event', y[0].dtype), ('time', y[1].dtype)]).astype('bool, <i8')
+        return struct_y
 
 
     def _survival_to_risk(self, y_pred):
