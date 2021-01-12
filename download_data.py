@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import time as time
 import os
+import pdb
 
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit
@@ -12,6 +13,8 @@ import mygene as mg
 
 # for data fetching
 import xenaPython as xena
+
+data_dir = 'data'
 
 def get_codes(host, dataset, fields, data):
     """Get codes for enumerations."""
@@ -189,7 +192,6 @@ def download_data():
     # df_phenotype = get_phenotype_data(hub, samples)
 
     df_all = merge_data(df_expression, df_survival)
-    
     filtered_df = filter_outliers(df_all)
     record_train_test(filtered_df)
     return 
@@ -222,17 +224,14 @@ def record_train_test(df):
     
 
 def record(df, directory="."):
-    """Split a dataframe into X, E and y and record it."""
+    """Split a dataframe into X and y and record it."""
     X_path = os.path.join(directory, 'X.csv')
-    E_path = os.path.join(directory, 'E.csv')
     y_path = os.path.join(directory, 'y.csv')
-    paths = [X_path, E_path, y_path]
-
+    paths = [X_path, y_path]
     X = df
-    E = X.pop('death')
-    y = X.pop('time')
-
-    for i, dataframe in enumerate([X, E, y]):
+    y = pd.concat([X['death'].copy(), X.pop('time')], ignore_index=True, axis=1)
+    y.rename({0:'death',1:'time'},inplace=True,axis=1)
+    for i, dataframe in enumerate([X, y]):
         dataframe.to_csv(paths[i], index = False)
     
 

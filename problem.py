@@ -22,8 +22,8 @@ data_dir = 'data'
 Predictions = rw.prediction_types.make_regression()
 
 
-def check_data_exist(database_filename):
-    """Download the data if they didn't existed."""
+def check_data_exist():
+    """Exit if the data weren't previously downloaded."""
     if not os.path.exists(directory):
         print('Data are missing. Maybe you should first run \n " python download_data.py "')
         sys.exit()
