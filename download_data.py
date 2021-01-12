@@ -219,4 +219,4 @@ def filter_outliers(df):
 
 
 if __name__ == '__main__':
-    download_data()
+    check_previous_download()
