@@ -6,6 +6,7 @@ from sklearn.compose import make_column_transformer
 
 class Regressor(BaseEstimator, RegressorMixin):
     def __init__(self):
+        # TODO : eliminate 'index' and choose if 'death' goes in X or in y
         preprocessor = make_column_transformer(('drop', ['index', 'death']), remainder='passthrough')
         pca = PCA(n_components=10)
         regressor = LinearRegression(n_jobs=-1)
@@ -13,7 +14,7 @@ class Regressor(BaseEstimator, RegressorMixin):
         return 
 
     def fit(self, X, y=None):
-        y_to_predict = y[1]
+        y_to_predict = y[:,1]
         self.regr.fit(X,y_to_predict)
         return self
     
