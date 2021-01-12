@@ -73,25 +73,35 @@ def _get_y_tot(path="."):
 class Regressor_df(object):
     """Regressor workflow allowing X to be a dataframe."""
 
-    def __init__(self):
+    def __init__(self, workflow_element_names=['regressor']):
         super().__init__()
+        self.element_names = workflow_element_names
+
         
     def train_submission(self, module_path, X_df, y, train_is=None):
-        if train_is is None:
-            train_is = slice(None, None, None)
-        regressor = import_module_from_source(
-            os.path.join(module_path, self.element_names[0] + '.py'),
-            self.element_names[0],
-            sanitize=True
-        )
-        reg = regressor.Regressor()
-        reg.fit(X_df.iloc[train_is], y[train_is])
+        try:
+            if train_is is None:
+                train_is = slice(None, None, None)
+            regressor = import_module_from_source(
+                os.path.join(module_path, self.element_names[0] + '.py'),
+                self.element_names[0],
+                sanitize=True
+            )
+            reg = regressor.Regressor()
+            reg.fit(X_df.iloc[train_is], y[train_is])
+        except:
+            print('fit')
+            pdb.set_trace()
         return reg
 
 
     def test_submission(self, trained_model, X_df):
-        reg = trained_model
-        y_pred = reg.predict(X_df)
+        try:
+            reg = trained_model
+            y_pred = reg.predict(X_df)
+        except:
+            print('pred')
+            pdb.set_trace()
         return y_pred
 
 

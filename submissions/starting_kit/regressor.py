@@ -11,7 +11,7 @@ class Regressor(BaseEstimator, RegressorMixin):
         return 
 
     def fit(self, X, y=None):
-        self.regr.fit(X)
+        self.regr.fit(X,y)
         return self
     
     def predict(self, X):
