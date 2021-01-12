@@ -172,12 +172,14 @@ def download_data():
     return 
     
 
-def check_previous_download(database_filename):
+def check_previous_download():
     """Download the data if they didn't existed."""
-    if not os.path.exists(directory):
-        download_data(database_filename)
-    else:
-        print('Data were already downloaded.')
+    dirs = ['%s/train' % data_dir, '%s/test' data_dir]
+    for directory in dirs:
+        if not os.path.exists(directory):
+            download_data()
+        else:
+            print('%s were already downloaded.' % directory)
 
 
 def record_train_test(df):
