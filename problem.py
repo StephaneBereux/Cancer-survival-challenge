@@ -126,6 +126,7 @@ class IntegratedBrierScore(BaseScoreType):
 
 problem_title = 'Breast cancer survival prediction'
 Predictions = rw.prediction_types.make_regression()
+workflow = rw.workflows.Regressor()
 score_types = [
     ConcordanceIndex(name='concordance_index')
 ]   

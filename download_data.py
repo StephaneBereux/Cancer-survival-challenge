@@ -127,7 +127,7 @@ def get_expression_data(hub, dataset, samples):
 # It could allow to add other co-variates, such as age.
 
 def get_phenotype_data(hub, samples):
-    """Return the sample type (normal vs. tumoral) of the sample."""
+    """Return phenotypic data of each sample."""
     dataset = "TCGA-BRCA.GDC_phenotype.tsv"
     values = get_fields_and_codes(hub, dataset, samples)
     phenotype_dict = dict(zip(fields, values))  # index by phenotype
