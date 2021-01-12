@@ -18,12 +18,7 @@ from rampwf.score_types import BaseScoreType
 # from pysurvival.utils.metrics import integrated_brier_score, concordance_index
 from sksurv.metrics import concordance_index_ipcw
 
-# for gene names converting
-import mygene as mg
-
-# for data fetching
-import xenaPython as xena
-
+data_dir = 'data'
 
 def check_data_exist(directory):
     """Exit if the data weren't previously downloaded."""
@@ -40,7 +35,7 @@ def get_cv(X, y):
         n_splits = 2
     spliter = GroupShuffleSplit(n_splits=n_splits, test_size=.2,
                             random_state=42)
-    non_censored = y[0] # Contains the content of the 'death' column, to keep track of which patient was censored
+    non_censored = y['death'] # Contains the content of the 'death' column, to keep track of which patient was censored
     splits = spliter.split(X, y, non_censored)
     return splits
 
@@ -74,7 +69,7 @@ def _get_y_tot(path="."):
 
 
 class ConcordanceIndex(BaseScoreType):
-    """."""
+    """Concordance Index taking the censoring distribution from the training data into account."""
     def __init__(self, name='concordance_index', precision=4):
         self.name = name
         self.precision = precision
@@ -130,7 +125,6 @@ class IntegratedBrierScore(BaseScoreType):
 
 
 problem_title = 'Breast cancer survival prediction'
-data_dir = 'data'
 Predictions = rw.prediction_types.make_regression()
 score_types = [
     ConcordanceIndex(name='concordance_index')
