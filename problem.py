@@ -14,6 +14,8 @@ from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit
 # Ramp imports
 import rampwf as rw
 from rampwf.score_types import BaseScoreType
+from rampwf.workflows import SKLearnPipeline
+from rampwf.utils.importing import import_module_from_source
 
 # scoring
 # from pysurvival.utils.metrics import integrated_brier_score, concordance_index
@@ -68,6 +70,36 @@ def _get_y_tot(path="."):
     return y_tot
 
 
+class Regressor_df(object):
+    """Regressor workflow allowing X to be a dataframe."""
+
+    def __init__(self):
+        super().__init__()
+        
+    def train_submission(self, module_path, X_df, y, train_is=None):
+        if train_is is None:
+            train_is = slice(None, None, None)
+        regressor = import_module_from_source(
+            os.path.join(module_path, self.element_names[0] + '.py'),
+            self.element_names[0],
+            sanitize=True
+        )
+        reg = regressor.Regressor()
+        reg.fit(X_df.iloc[train_is], y[train_is])
+        return reg
+
+
+    def test_submission(self, trained_model, X_df):
+        reg = trained_model
+        y_pred = reg.predict(X_df)
+        return y_pred
+
+
+def make_worflow():
+    """Define new workflow, similar to Regressor but where X is a Dataframe."""
+    return Regressor_df()
+
+
 class ConcordanceIndex(BaseScoreType):
     """Concordance Index taking the censoring distribution from the training data into account."""
     def __init__(self, name='concordance_index', precision=4):
@@ -104,7 +136,7 @@ class ConcordanceIndex(BaseScoreType):
 
 problem_title = 'Breast cancer survival prediction'
 Predictions = rw.prediction_types.make_regression()
-workflow = rw.workflows.Regressor()
+workflow = make_worflow()
 score_types = [
     ConcordanceIndex(name='concordance_index')
 ]   
