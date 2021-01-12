@@ -1,4 +1,7 @@
 # noqa: D100
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import numpy as np
 import pandas as pd
 import time as time
@@ -20,10 +23,6 @@ import mygene as mg
 
 # for data fetching
 import xenaPython as xena
-
-problem_title = 'Breast cancer survival prediction'
-data_dir = 'data'
-Predictions = rw.prediction_types.make_regression()
 
 
 def check_data_exist(directory):
@@ -53,7 +52,7 @@ def _read_data(path, dir_name):
     check_data_exist(path_to_database)
     X = pd.read_csv(path_X)
     y = pd.read_csv(path_y)
-    return X, E, y
+    return X, y
 
 
 def get_train_data(path="."):
@@ -71,23 +70,21 @@ def _get_y_tot(path="."):
     _, y_train = get_train_data()
     _, y_test = get_test_data()
     y_tot = pd.concat([y_train, y_test], ignore_index=True)
-    print(y_tot)
     return y_tot
 
 
 class ConcordanceIndex(BaseScoreType):
-    is_lower_the_better = False
-    minimum = 0.0
-    maximum = 1.0
-    y_tot = _get_y_tot()
-    self.max_time = y_tot[1].max() # Max survival time in the whole dataset (same as in the train dataset)
-    _, y_train = get_train_data()
-    self.struct_y_train = self._to_structured_array(y_train) # To estimate the censoring distribution
-
-
+    """."""
     def __init__(self, name='concordance_index', precision=4):
         self.name = name
         self.precision = precision
+        is_lower_the_better = False
+        minimum = 0.0
+        maximum = 1.0
+        y_tot = _get_y_tot()
+        self.max_time = y_tot['time'].max() # Max survival time in the whole dataset (same as in the train dataset)
+        _, y_train = get_train_data()
+        self.struct_y_train = self._to_structured_array(y_train) # To estimate the censoring distribution
 
 
     def _to_structured_array(self, y_df):
@@ -117,7 +114,7 @@ class IntegratedBrierScore(BaseScoreType):
     minimum = 0.0
     maximum = 1.0
     y_tot = _get_y_tot()
-    max_time = y_tot[1].max() # Max survival time in the whole dataset (same as in the train dataset)
+    max_time = y_tot['time'].max() # Max survival time in the whole dataset (same as in the train dataset)
 
     def __init__(self, name='concordance_index', precision=4):
         self.name = name
@@ -132,7 +129,9 @@ class IntegratedBrierScore(BaseScoreType):
         return score
 
 
-
+problem_title = 'Breast cancer survival prediction'
+data_dir = 'data'
+Predictions = rw.prediction_types.make_regression()
 score_types = [
     ConcordanceIndex(name='concordance_index')
 ]   
