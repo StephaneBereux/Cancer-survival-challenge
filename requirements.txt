@@ -1,7 +1,12 @@
 # Generic requirements
 numpy
 pandas
+scipy
+sklearn
 
 # Gather the data
 mygene
 xenaPython
+
+# Survival analysis
+scikit-survival

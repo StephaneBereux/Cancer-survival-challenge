@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import time as time
 import os, sys
+import pdb
 
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit
@@ -46,7 +47,7 @@ def _read_data(path, dir_name):
     path_y = os.path.join(path_to_database, 'y.csv')
     check_data_exist(path_to_database)
     X = pd.read_csv(path_X)
-    y = pd.read_csv(path_y)
+    y = pd.read_csv(path_y).values
     return X, y
 
 
@@ -101,26 +102,6 @@ class ConcordanceIndex(BaseScoreType):
         risk = self._survival_to_risk(y_pred)
         struct_y_test = self._to_structured_array(y_test)
         score = concordance_index(self.struct_y_train, struct_y_test, risk)[0]
-        return score
-
-
-class IntegratedBrierScore(BaseScoreType):
-    is_lower_the_better = False
-    minimum = 0.0
-    maximum = 1.0
-    y_tot = _get_y_tot()
-    max_time = y_tot['time'].max() # Max survival time in the whole dataset (same as in the train dataset)
-
-    def __init__(self, name='concordance_index', precision=4):
-        self.name = name
-        self.precision = precision
-
-
-    def __call__(self, y_true, y_pred):
-        
-        score = concordance_index_ipcw(y_true,
-                                  y_pr,
-                                  average='samples')
         return score
 
 
