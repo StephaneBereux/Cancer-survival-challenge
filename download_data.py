@@ -114,21 +114,6 @@ def get_survival_data(hub, dataset, samples):
     return df_survival
 
 
-def get_all_survival_data(samples):
-    hub = 'https://tcga.xenahubs.net'
-    dataset = "survival/BRCA_survival.txt"
-    samples = xena.dataset_samples(hub, dataset, None)
-    # OS is 1 if the patient has died or 0 if he was censored (lost...)
-    fields = ['DFI', 'DFI.time', 'DSS', 'DSS.time', 'OS', 'OS.time', 'PFI', 'PFI.time', 'sampleID']
-    #fields = ['OS', "OS.time", "sampleID"]
-    values = get_fields_and_codes(hub, dataset, samples, fields)
-    survival_dict = dict(zip(fields, values))  # index by phenotype
-    survival_dict["time"] = survival_dict.pop("OS.time")
-    survival_dict["death"] = survival_dict.pop("OS")
-    df_survival = pd.DataFrame(data=survival_dict)
-    return df_survival
-
-
 def get_expression_data(hub, dataset, samples):
     """Return a Dataframe containing sampleID and expression data."""
     fields = ["sampleID"]
@@ -139,19 +124,13 @@ def get_expression_data(hub, dataset, samples):
     return df_genes_expression
 
 # WARNING : this code is not used for the moment
-# There are normal (e.g. not tumoral) samples in TCGA
-# which should probably be removed. _sample_type will
-# identify normals. _study will identify TCGA vs. GTEX vs. TARGET.
-# Additionnaly, other co-variates, such as age, could be added
-
+# It could allow to add other co-variates, such as age.
 
 def get_phenotype_data(hub, samples):
-    """Return the sample type (normal vs. tumoral) of the tumor."""
+    """Return the sample type (normal vs. tumoral) of the sample."""
     dataset = "TCGA-BRCA.GDC_phenotype.tsv"
-    fields = ['sample_type.samples', "sampleID"]
-    values = get_fields_and_codes(hub, dataset, samples, fields)
+    values = get_fields_and_codes(hub, dataset, samples)
     phenotype_dict = dict(zip(fields, values))  # index by phenotype
-    phenotype_dict["sample_type"] = phenotype_dict.pop('sample_type.samples')
     df_phenotype = pd.DataFrame(data=phenotype_dict)
     return df_phenotype
 
@@ -169,10 +148,6 @@ def merge_data(df_expression, df_survival, df_phenotype=None):
     df = pd.merge(df_expression, df_survival)  # Merge according to sampleID
     df = df.apply(pd.to_numeric, errors='coerce')
     df = df[~pd.isna(df["time"])][~pd.isna(df["death"])]
-
-    # To remove duplicates and/or add supplementary phenotypical covariates
-    if df_phenotype is not None:
-        df = remove_duplicates(df, df_phenotype)
     df = df.drop('sampleID', axis=1)  # remove identifier for analysis
     return df
 
@@ -188,7 +163,7 @@ def download_data():
     # Survival data
     df_survival = get_survival_data(hub, dataset, samples)
     
-    # Phenotype data
+    # Phenotype data (unused for now) : could be used to add covariates
     # df_phenotype = get_phenotype_data(hub, samples)
 
     df_all = merge_data(df_expression, df_survival)
