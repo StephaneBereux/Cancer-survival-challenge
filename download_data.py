@@ -174,7 +174,7 @@ def download_data():
 
 def check_previous_download():
     """Download the data if they didn't existed."""
-    dirs = ['%s/train' % data_dir, '%s/test' data_dir]
+    dirs = ['%s/train' % data_dir, '%s/test' % data_dir]
     for directory in dirs:
         if not os.path.exists(directory):
             download_data()
