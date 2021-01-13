@@ -2,16 +2,13 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
-from sklearn.compose import make_column_transformer
 
 
 class Regressor(BaseEstimator, RegressorMixin):
     def __init__(self):
-        # TODO : eliminate 'index' 
-        preprocessor = make_column_transformer(('drop', ['index']), remainder='passthrough')
         pca = PCA(n_components=10)
         regressor = LinearRegression(n_jobs=-1)
-        self.regr = Pipeline([('preprocessor', preprocessor), ('pca', pca), ('regressor', regressor)])
+        self.regr = Pipeline([('pca', pca), ('regressor', regressor)])
         return 
 
     def fit(self, X, y=None):
