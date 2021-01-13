@@ -157,7 +157,7 @@ class ConcordanceIndex(BaseScoreType):
         minimum = 0.0
         maximum = 1.0
         y_tot = _get_y_tot()
-        self.max_time = y_tot[1].max() # Max survival time in the whole dataset (same as in the train dataset)
+        self.max_time = y_tot[:,1].max() # Max survival time in the whole dataset (same as in the train dataset)
         _, y_train = get_train_data()
         self.struct_y_train = self._to_structured_array(y_train) # To estimate the censoring distribution
 
@@ -165,19 +165,20 @@ class ConcordanceIndex(BaseScoreType):
     def _to_structured_array(self, y):
         """Create a structured array containing the event and the time to the event."""
         # y[0] = event, y[1] = time
-        struct_y = y.ravel().view([('event', y[0].dtype), ('time', y[1].dtype)]).astype('bool, <i8')
+        struct_y = y.ravel().view([('event', y[0][0].dtype), ('time', y[0][1].dtype)]).astype('bool, <i8')
         return struct_y
 
 
     def _survival_to_risk(self, y_pred):
         """Risk is a relative value, inversely correlated to life expectancy."""
-        max_y = max(y_pred, self.max_time)
+        max_y = max(y_pred.max(), self.max_time)
         return (max_y + 1) - y_pred # Return a positive risk
 
 
     def __call__(self, y_true, y_pred):
+        pdb.set_trace()
         risk = self._survival_to_risk(y_pred)
-        struct_y_test = self._to_structured_array(y_test)
+        struct_y_test = self._to_structured_array(y_true)
         score = concordance_index(self.struct_y_train, struct_y_test, risk)[0]
         return score
 
