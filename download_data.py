@@ -209,7 +209,7 @@ def record(df, directory="."):
     y_path = os.path.join(directory, 'y.csv')
     paths = [X_path, y_path]
     X = df
-    y = pd.concat([X['death'].copy(), X.pop('time')], ignore_index=True, axis=1)
+    y = pd.concat([X.pop('death'), X.pop('time')], ignore_index=True, axis=1)
     y.rename({0:'death', 1:'time'}, inplace=True, axis=1)
     for i, dataframe in enumerate([X, y]):
         dataframe.to_csv(paths[i], index = False)

@@ -3,7 +3,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.compose import make_column_transformer
-import pdb
+
 
 class Regressor(BaseEstimator, RegressorMixin):
     def __init__(self):
