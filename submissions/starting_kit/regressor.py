@@ -3,6 +3,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.compose import make_column_transformer
+import pdb
 
 class Regressor(BaseEstimator, RegressorMixin):
     def __init__(self):
@@ -14,10 +15,12 @@ class Regressor(BaseEstimator, RegressorMixin):
         return 
 
     def fit(self, X, y=None):
-        y_to_predict = y[:,1]
+        y_to_predict = y[:,1] # We are only interested in predicting the survival time, not the censoring
         self.regr.fit(X,y_to_predict)
         return self
     
     def predict(self, X):
+        print(X.shape)
+        print(self.regr.predict(X).shape)
         return self.regr.predict(X)
 

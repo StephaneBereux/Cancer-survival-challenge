@@ -16,9 +16,9 @@ import rampwf as rw
 from rampwf.score_types import BaseScoreType
 from rampwf.workflows import SKLearnPipeline
 from rampwf.utils.importing import import_module_from_source
+from rampwf.prediction_types.base import BasePrediction
 
 # scoring
-# from pysurvival.utils.metrics import integrated_brier_score, concordance_index
 from sksurv.metrics import concordance_index_ipcw
 
 data_dir = 'data'
@@ -70,6 +70,42 @@ def _get_y_tot(path="."):
     return y_tot
 
 
+def _survival_regression_init(self, y_pred=None, y_true=None, n_samples=None):
+    """The participants only predict the survival time in y_pred, while y_true 
+    also contains the censoring data along the first coordinate. Thus :
+    y_pred.shape = (n_samples, n_columns) and y_true.shape = (n_samples, 1 + n_columns). 
+    This prediction type handles it."""
+    if y_pred is not None:
+        self.y_pred = np.array(y_pred)
+    elif y_true is not None:
+        self.y_pred = np.array(y_true[:,1])
+    elif n_samples is not None:
+        if self.n_columns == 0:
+            shape = (n_samples)
+        else:
+            shape = (n_samples, self.n_columns)
+        self.y_pred = np.empty(shape, dtype=float)
+        self.y_pred.fill(np.nan)
+    else:
+        raise ValueError(
+            'Missing init argument: y_pred, y_true, or n_samples')
+    self.check_y_pred_dimensions()
+
+
+def make_survival_regression(label_names=[], index_censoring_data=0):
+    """index_censoring_data (int) : index of the columns of y_true 
+        which contains the censoring data. Default is 0."""
+    Predictions = type(
+        '_SurvivalRegression',
+        (BasePrediction,),
+        {'label_names': label_names,
+         'n_columns': len(label_names),
+         'n_columns_true': len(label_names),
+         '__init__': _survival_regression_init,
+         })
+    return Predictions
+
+
 class Regressor_df(object):
     """Regressor workflow allowing X to be a dataframe."""
 
@@ -89,6 +125,7 @@ class Regressor_df(object):
             )
             reg = regressor.Regressor()
             reg.fit(X_df.iloc[train_is], y[train_is])
+            print('fitting done')
         except:
             print('fit')
             pdb.set_trace()
@@ -97,6 +134,7 @@ class Regressor_df(object):
 
     def test_submission(self, trained_model, X_df):
         try:
+            print('here')
             reg = trained_model
             y_pred = reg.predict(X_df)
         except:
@@ -105,7 +143,7 @@ class Regressor_df(object):
         return y_pred
 
 
-def make_worflow():
+def make_regressor_df_worflow():
     """Define new workflow, similar to Regressor but where X is a Dataframe."""
     return Regressor_df()
 
@@ -145,8 +183,8 @@ class ConcordanceIndex(BaseScoreType):
 
 
 problem_title = 'Breast cancer survival prediction'
-Predictions = rw.prediction_types.make_regression()
-workflow = make_worflow()
+Predictions = make_survival_regression()
+workflow = make_regressor_df_worflow()
 score_types = [
     ConcordanceIndex(name='concordance_index')
 ]   
