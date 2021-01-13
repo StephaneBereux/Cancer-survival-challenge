@@ -212,6 +212,7 @@ def record(df, directory="."):
     y = pd.concat([X.pop('death'), X.pop('time')], ignore_index=True, axis=1)
     y.rename({0:'death', 1:'time'}, inplace=True, axis=1)
     for i, dataframe in enumerate([X, y]):
+        pdb.set_trace()
         dataframe.to_csv(paths[i], index = False)
     
 
