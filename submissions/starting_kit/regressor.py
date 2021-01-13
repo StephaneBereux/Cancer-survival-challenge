@@ -7,8 +7,8 @@ from sklearn.compose import make_column_transformer
 
 class Regressor(BaseEstimator, RegressorMixin):
     def __init__(self):
-        # TODO : eliminate 'index' and choose if 'death' goes in X or in y
-        preprocessor = make_column_transformer(('drop', ['index', 'death']), remainder='passthrough')
+        # TODO : eliminate 'index' 
+        preprocessor = make_column_transformer(('drop', ['index']), remainder='passthrough')
         pca = PCA(n_components=10)
         regressor = LinearRegression(n_jobs=-1)
         self.regr = Pipeline([('preprocessor', preprocessor), ('pca', pca), ('regressor', regressor)])
