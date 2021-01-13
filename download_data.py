@@ -212,14 +212,13 @@ def record(df, directory="."):
     y = pd.concat([X.pop('death'), X.pop('time')], ignore_index=True, axis=1)
     y.rename({0:'death', 1:'time'}, inplace=True, axis=1)
     for i, dataframe in enumerate([X, y]):
-        pdb.set_trace()
         dataframe.to_csv(paths[i], index = False)
     
 
 def filter_outliers(df):
     """The events occuring after 4500 are too rare and must be filtered, otherwise the Integrated Brier Score makes no sense."""
     long_times = df[df['time'] > 4500].index.to_numpy()
-    return df.drop(long_times).reset_index()
+    return df.drop(long_times).reset_index(drop=True)
 
 
 if __name__ == '__main__':
