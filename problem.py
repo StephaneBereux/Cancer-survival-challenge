@@ -89,7 +89,11 @@ def _survival_regression_init(self, y_pred=None, y_true=None, n_samples=None):
     else:
         raise ValueError(
             'Missing init argument: y_pred, y_true, or n_samples')
-    #self.check_y_pred_dimensions()
+            
+    if y_true is None:
+        # y_true fails the check as it has a supplementary dim
+        # and it doesn't need it : it's correct by construction
+        self.check_y_pred_dimensions()
 
 
 def make_survival_regression(label_names=[], index_censoring_data=0):
@@ -177,6 +181,7 @@ class ConcordanceIndex(BaseScoreType):
 
     def __call__(self, y_true, y_pred):
         pdb.set_trace()
+        self.check_y_pred_dimensions(y_true, y_pred)
         risk = self._survival_to_risk(y_pred)
         struct_y_test = self._to_structured_array(y_true)
         score = concordance_index_ipcw(self.struct_y_train, struct_y_test, risk)[0]
