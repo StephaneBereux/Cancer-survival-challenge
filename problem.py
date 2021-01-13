@@ -9,7 +9,7 @@ import os, sys
 import pdb
 
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import StratifiedShuffleSplit, GroupShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit
 
 # Ramp imports
 import rampwf as rw
@@ -36,9 +36,9 @@ def get_cv(X, y):
     n_splits = 4
     if test:
         n_splits = 2
-    spliter = GroupShuffleSplit(n_splits=n_splits, test_size=.2, random_state=42)
+    spliter = StratifiedShuffleSplit(n_splits=n_splits, test_size=.2, random_state=42)
     non_censored = y[:,0] # Contains the content of the 'death' column, to keep track of which patient was censored
-    splits = spliter.split(X, y, non_censored)
+    splits = spliter.split(X, non_censored) # allows to keep constant the ratio of censored patients
     return splits
 
 
@@ -179,7 +179,7 @@ class ConcordanceIndex(BaseScoreType):
         pdb.set_trace()
         risk = self._survival_to_risk(y_pred)
         struct_y_test = self._to_structured_array(y_true)
-        score = concordance_index(self.struct_y_train, struct_y_test, risk)[0]
+        score = concordance_index_ipcw(self.struct_y_train, struct_y_test, risk)[0]
         return score
 
 
