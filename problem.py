@@ -89,10 +89,10 @@ def _survival_regression_init(self, y_pred=None, y_true=None, n_samples=None):
     else:
         raise ValueError(
             'Missing init argument: y_pred, y_true, or n_samples')
-            
+
     if y_true is None:
-        # y_true fails the check as it has a supplementary dim
-        # and it doesn't need it : it's correct by construction
+        # y_true fails the check as it has a supplementary dim (the 'death' flag)
+        # and it doesn't need to be checked : it's correct by construction
         self.check_y_pred_dimensions()
 
 
@@ -119,31 +119,21 @@ class Regressor_df(object):
 
         
     def train_submission(self, module_path, X_df, y, train_is=None):
-        try:
-            if train_is is None:
-                train_is = slice(None, None, None)
-            regressor = import_module_from_source(
-                os.path.join(module_path, self.element_names[0] + '.py'),
-                self.element_names[0],
-                sanitize=True
-            )
-            reg = regressor.Regressor()
-            reg.fit(X_df.iloc[train_is], y[train_is])
-            print('fitting done')
-        except:
-            print('fit')
-            pdb.set_trace()
+        if train_is is None:
+            train_is = slice(None, None, None)
+        regressor = import_module_from_source(
+            os.path.join(module_path, self.element_names[0] + '.py'),
+            self.element_names[0],
+            sanitize=True
+        )
+        reg = regressor.Regressor()
+        reg.fit(X_df.iloc[train_is], y[train_is])
         return reg
 
 
     def test_submission(self, trained_model, X_df):
-        try:
-            print('here')
-            reg = trained_model
-            y_pred = reg.predict(X_df)
-        except:
-            print('pred')
-            pdb.set_trace()
+        reg = trained_model
+        y_pred = reg.predict(X_df)
         return y_pred
 
 
@@ -168,7 +158,7 @@ class ConcordanceIndex(BaseScoreType):
 
     def _to_structured_array(self, y):
         """Create a structured array containing the event and the time to the event."""
-        # y[0] = event, y[1] = time
+        # y[:,0] = event, y[:,1] = time
         struct_y = y.ravel().view([('event', y[0][0].dtype), ('time', y[0][1].dtype)]).astype('bool, <i8')
         return struct_y
 
@@ -180,7 +170,6 @@ class ConcordanceIndex(BaseScoreType):
 
 
     def __call__(self, y_true, y_pred):
-        pdb.set_trace()
         self.check_y_pred_dimensions(y_true, y_pred)
         risk = self._survival_to_risk(y_pred)
         struct_y_test = self._to_structured_array(y_true)

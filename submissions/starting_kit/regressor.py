@@ -20,7 +20,5 @@ class Regressor(BaseEstimator, RegressorMixin):
         return self
     
     def predict(self, X):
-        print(X.shape)
-        print(self.regr.predict(X).shape)
         return self.regr.predict(X)
 
