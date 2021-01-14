@@ -3,6 +3,8 @@ numpy
 pandas
 scipy
 sklearn
+seaborn
+matplotlib
 
 # Gather the data
 mygene
