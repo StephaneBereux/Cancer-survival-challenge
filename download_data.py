@@ -95,10 +95,9 @@ def match_id_value(hub, dataset, samples, fields, expression_data):
     genes_dict = dict(zip(fields, values))
     for dico in expression_data:
         if dico["gene"] is not None:
-            label = "expression" + dico["gene"]
             scores = dico["scores"][0]
             if(len(scores) > 0):
-                genes_dict[label] = scores
+                genes_dict[dico["gene"]] = scores
     df_genes_expression = pd.DataFrame(data=genes_dict)
     return df_genes_expression
 
@@ -194,7 +193,7 @@ def record_train_test(df):
     
     # Create the architecture to record the data
     train_dir, test_dir = os.path.join(data_dir, 'train'), os.path.join(data_dir, 'test')
-    for directory in [data_dir, train_dir, test_dir]:
+    for directory in [train_dir, test_dir]:
         if not os.path.exists(directory):
             os.makedirs(directory)
     
