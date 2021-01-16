@@ -62,6 +62,11 @@ def get_test_data(path="."):
     return _read_data(path, 'test')
 
 
+def get_census(path="."):
+    """Return the partial CENSUS database."""
+    return pd.read_csv('data/CENSUS_list.csv')
+
+    
 def _get_y_tot(path="."):
     """Return the concatenation of the train and the test labels."""
     _, y_train = get_train_data()
