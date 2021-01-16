@@ -147,6 +147,14 @@ def make_regressor_df_worflow():
     return Regressor_df()
 
 
+def to_structured_array(E_y):
+    """Create a structured array containing the event and the time to the event."""
+    # E_y[:,0] = event, E_y[:,1] = time
+    struct_y = E_y.ravel().view([('event', E_y[0][0].dtype), ('time', E_y[0][1].dtype)]).astype('bool, <i8')
+    return struct_y
+
+
+
 class ConcordanceIndex(BaseScoreType):
     """Concordance Index taking the censoring distribution from the training data into account."""
     def __init__(self, name='concordance_index', precision=4):
@@ -157,15 +165,8 @@ class ConcordanceIndex(BaseScoreType):
         maximum = 1.0
         y_tot = _get_y_tot()
         self.max_time = y_tot[:,1].max() # Max survival time in the whole dataset (same as in the train dataset)
-        _, y_train = get_train_data()
-        self.struct_y_train = self._to_structured_array(y_train) # To estimate the censoring distribution
-
-
-    def _to_structured_array(self, y):
-        """Create a structured array containing the event and the time to the event."""
-        # y[:,0] = event, y[:,1] = time
-        struct_y = y.ravel().view([('event', y[0][0].dtype), ('time', y[0][1].dtype)]).astype('bool, <i8')
-        return struct_y
+        _, E_y_train = get_train_data()
+        self.struct_E_y_train = to_structured_array(E_y_train) # To estimate the censoring distribution
 
 
     def _survival_to_risk(self, y_pred):
@@ -174,11 +175,11 @@ class ConcordanceIndex(BaseScoreType):
         return (max_y + 1) - y_pred # Return a positive risk
 
 
-    def __call__(self, y_true, y_pred):
-        self.check_y_pred_dimensions(y_true, y_pred)
+    def __call__(self, E_y_true, y_pred):
+        self.check_y_pred_dimensions(E_y_true, y_pred)
         risk = self._survival_to_risk(y_pred)
-        struct_y_test = self._to_structured_array(y_true)
-        score = concordance_index_ipcw(self.struct_y_train, struct_y_test, risk)[0]
+        struct_E_y_test = to_structured_array(E_y_true)
+        score = concordance_index_ipcw(self.struct_E_y_train, struct_E_y_test, risk)[0]
         return score
 
 
