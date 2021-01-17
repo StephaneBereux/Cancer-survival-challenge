@@ -12,3 +12,9 @@ xenaPython
 
 # Survival analysis
 scikit-survival
+
+# Requierements for RAMP Studio
+ramp-workflow
+
+# Graph library
+networkx
