@@ -1,12 +1,19 @@
 # Cancer-survival-challenge
 
-Authors : Hugo Stubler, Stéphane Bereux, 
+Authors : Stéphane Béreux, Gabriel Faivre, Alexandre Marquis, Michael Resplandy, Hugo Stubler
 
 <div style="text-align: center">
 <img src="https://raw.githubusercontent.com/StephaneBereux/Cancer-survival-challenge/master/img/symbol.jpg" width="250px" />
 </div>
 
 RAMP starting kit
+
+## About
+
+Breast cancer is one of the most common cancers and the second leading cause of cancer death among women.
+
+The Cancer Survability Challenge aim to propose a data challenge about one of the leads to tackle this subject : predict the survivability of a patient depending on its genome.
+
 
 ## Getting started
 
