@@ -1,5 +1,5 @@
 from sksurv.linear_model import CoxPHSurvivalAnalysis
-from problem import to_structured_array
+from problem import to_structured_array, get_census
 
 from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.decomposition import PCA
