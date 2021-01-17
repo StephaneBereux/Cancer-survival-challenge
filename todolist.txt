@@ -1,6 +1,1 @@
-- Refaire l'index en haut
-- faire le requirements.txt et le environment.yml
-- vérifier que tout run bien
-- dans la partie modèle, comparer les performances de la cox régressions sur les différents features
-- faire le score
-- faire la dernière partie
+ environment.yml
