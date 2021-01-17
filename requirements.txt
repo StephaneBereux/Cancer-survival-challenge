@@ -5,6 +5,7 @@ scipy
 sklearn
 seaborn
 matplotlib
+tqdm
 
 # Gather the data
 mygene
