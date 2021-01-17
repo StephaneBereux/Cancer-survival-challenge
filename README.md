@@ -6,8 +6,6 @@ Authors : Stéphane Béreux, Gabriel Faivre, Alexandre Marquis, Michael Respland
 <img src="https://raw.githubusercontent.com/StephaneBereux/Cancer-survival-challenge/master/img/symbol.jpg" width="250px" />
 </div>
 
-RAMP starting kit
-
 ## About
 
 Breast cancer is one of the most common cancers and the second leading cause of cancer death among women.
