@@ -37,8 +37,8 @@ def compute_correlations(X, log_time):
 
 def get_significant_genes(X, E_y):
     """Get the genes with the correlation the most statistically reliable."""
-    E = [k[0] for k in E_y.tolist()]
-    y = [k[1] for k in E_y.tolist()]
+    E = [e_y[0] for e_y in E_y.tolist()]
+    y = [e_y[1] for e_y in E_y.tolist()]
     log_time = np.log(y)
     correlation_df = compute_correlations(X, log_time)
 
