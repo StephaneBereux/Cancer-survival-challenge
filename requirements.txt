@@ -14,7 +14,7 @@ xenaPython
 # Survival analysis
 scikit-survival
 
-# Requierements for RAMP Studio
+# Requirements for RAMP Studio
 ramp-workflow
 
 # Graph library
