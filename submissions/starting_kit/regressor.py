@@ -1,15 +1,20 @@
-from sksurv.linear_model import CoxPHSurvivalAnalysis
 import numpy as np
 import pandas as pd 
 from scipy.stats import pearsonr
 import math as math
-from problem import to_structured_array
 
 from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.compose import make_column_transformer
-from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
+
+from sksurv.linear_model import CoxPHSurvivalAnalysis
+
+
+def to_structured_array(E_y):
+    """Create a structured array containing the event and the time to the event."""
+    # E_y[:,0] = event, E_y[:,1] = time
+    struct_y = E_y.ravel().view([('event', E_y[0][0].dtype), ('time', E_y[0][1].dtype)]).astype('bool, <i8')
+    return struct_y
 
 
 def compute_correlations(X, y_log):
