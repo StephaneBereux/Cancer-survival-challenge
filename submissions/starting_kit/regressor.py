@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd 
-from scipy.stats import pearsonr
-import math as math
-
+from scipy.stats import pearsonr, PearsonRConstantInputWarning
+import warnings
+warnings.filterwarnings('error')
 
 from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.pipeline import Pipeline
@@ -13,7 +13,6 @@ from sksurv.linear_model import CoxPHSurvivalAnalysis
 
 def to_structured_array(E_y):
     """Create a structured array containing the event and the time to the event."""
-    # E_y[:,0] = event, E_y[:,1] = time
     struct_y = E_y.ravel().view([('event', E_y[0][0].dtype), ('time', E_y[0][1].dtype)]).astype('bool, <i8')
     return struct_y
 
@@ -23,13 +22,16 @@ def compute_correlations(X, log_time):
     scaler = StandardScaler()
     scaled_X = scaler.fit_transform(X)
     gene_index, corr_r, p_values = [], [], []
-    corr_df = pd.DataFrame(columns = {'genes', 'correlation', 'p_values'})
     for i, gene in enumerate(scaled_X.T):
-        r, p_val = pearsonr(gene, log_time)
-        if not math.isnan(r): # If the correlation is valid
+        try:
+            r, p_val = pearsonr(gene, log_time)
             gene_index.append(X.columns[i])
             corr_r.append(r)
             p_values.append(p_val)
+        except PearsonRConstantInputWarning as w:
+            #catch warning when pearson input is constant
+            pass
+
     corr_df = pd.DataFrame({'correlation' : corr_r, 
             'p_value' : p_values} , index = gene_index) 
     return corr_df
@@ -37,7 +39,6 @@ def compute_correlations(X, log_time):
 
 def get_significant_genes(X, E_y):
     """Get the genes with the correlation the most statistically reliable."""
-    E = [e_y[0] for e_y in E_y.tolist()]
     y = [e_y[1] for e_y in E_y.tolist()]
     log_time = np.log(y)
     correlation_df = compute_correlations(X, log_time)
