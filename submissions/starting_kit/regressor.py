@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd 
 from scipy.stats import pearsonr
 import math as math
+import pdb as pdb
 
 from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.pipeline import Pipeline
@@ -66,6 +67,7 @@ class GenesFilter(BaseEstimator, TransformerMixin):
     
 
     def fit(self, X, y=None):
+        pdb.set_trace()
         self.to_drop_columns = get_underexpressed_columns(X)
         self.feature_genes = get_significant_genes(X,y)
         self.feature_genes = set(self.feature_genes) - set(self.to_drop_columns)
