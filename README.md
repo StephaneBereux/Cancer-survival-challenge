@@ -10,7 +10,7 @@ Authors : Stéphane Béreux, Gabriel Faivre, Alexandre Marquis, Michael Respland
 
 Breast cancer is one of the most common cancers and the second leading cause of cancer death among women.
 
-The Cancer Survability Challenge aim to propose a data challenge about one of the leads to tackle this subject : predict the survivability of a patient depending on its genome.
+The Cancer Survability Challenge aim to propose a data challenge about one of the leads to tackle this subject : predict the survivability of a patient depending on its transcriptome.
 
 
 ## Getting started
@@ -27,6 +27,8 @@ pip install -U -r requirements.txt
 
 If you are using `conda`, we provide an `environment.yml` file for similar
 usage.
+
+(Note that three mandatory libraries : `mygene`, `xenaPython` and `scikit-survival` are only available through `pip`, and not with `conda`, that is why they are not listed in the `environment.yml`.)
 
 ### Challenge description
 
