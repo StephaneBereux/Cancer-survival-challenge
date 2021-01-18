@@ -18,7 +18,7 @@ def to_structured_array(E_y):
     return struct_y
 
 
-def compute_correlations(X, y_log):
+def compute_correlations(X, log_time):
     """Compute the correlation and the associated p-values between the genes and the survival times."""
     scaler = StandardScaler()
     scaled_X = scaler.fit_transform(X)
@@ -37,11 +37,10 @@ def compute_correlations(X, y_log):
 
 def get_significant_genes(X, E_y):
     """Get the genes with the correlation the most statistically reliable."""
-    E = E_y[:,0]
-    y = E_y[:,1]
+    E = [k[0] for k in E_y.tolist()]
+    y = [k[1] for k in E_y.tolist()]
     log_time = np.log(y)
     correlation_df = compute_correlations(X, log_time)
-    display_correlations(correlation_df)
 
     # we use Bonferroni correction
     bonferroni_alpha = 0.05 / X.shape[1]
@@ -67,7 +66,6 @@ class GenesFilter(BaseEstimator, TransformerMixin):
     
 
     def fit(self, X, y=None):
-        pdb.set_trace()
         self.to_drop_columns = get_underexpressed_columns(X)
         self.feature_genes = get_significant_genes(X,y)
         self.feature_genes = set(self.feature_genes) - set(self.to_drop_columns)
