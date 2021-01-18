@@ -1,11 +1,49 @@
 from sksurv.linear_model import CoxPHSurvivalAnalysis
-from problem import to_structured_array, get_census
+from problem import get_census
+import numpy as np
+import pandas as pd 
+from scipy.stats import pearsonr
+import math as math
 
 from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
-from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.compose import make_column_transformer
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+
+
+def compute_correlations(X, y_log):
+    """Compute the correlation and the associated p-values between the genes and the survival times."""
+    scaler = StandardScaler()
+    scaled_X = scaler.fit_transform(X)
+    gene_index, corr_r, p_values = [], [], []
+    corr_df = pd.DataFrame(columns = {'genes', 'correlation', 'p_values'})
+    for i, gene in enumerate(scaled_X.T):
+        r, p_val = pearsonr(gene, log_time)
+        if not math.isnan(r): # If the correlation is valid
+            gene_index.append(X.columns[i])
+            corr_r.append(r)
+            p_values.append(p_val)
+    corr_df = pd.DataFrame({'correlation' : corr_r, 
+            'p_value' : p_values} , index = gene_index) 
+    return corr_df
+
+
+def get_census_genes(X, y):
+    """Get the most statistical reliable cancer driver genes from the CENSUS database."""
+    census = get_census()
+    log_time = np.log(y)
+    genes_consensus = set(census['Gene Symbol'].to_numpy())
+    X_census = X_train.filter(genes_consensus)
+    correlation_df = compute_correlations(X_census, log_time)
+    display_correlations(correlation_df)
+
+    # As before, we use Bonferroni correction
+    bonferroni_alpha = 0.05 / X_census.shape[1]
+    sign_corr = correlation_df[np.abs(correlation_df['p_value']) < bonferroni_alpha]
+    sign_correlation_genes = sign_corr.index.to_numpy()
+    genes_of_interest = X_train.filter(sign_correlation_genes)
+    return genes_of_interest.columns.to_numpy()
 
 
 def get_underexpressed_columns(X):
@@ -17,23 +55,15 @@ def get_underexpressed_columns(X):
     return underexpressed_columns
 
 
-class FeatureFilter(BaseEstimator, TransformerMixin):
-    """ A transformer that only keeps the genes listed in the feature_i."""
-    def __init__(self, num_feature, to_drop_columns=[]):
-        if num_feature == 1:
-            self.feature_genes = columns_1
-        elif num_feature == 2:
-            self.feature_genes = columns_2
-        elif num_feature == 3:
-            self.feature_genes = columns_3
-        elif num_feature == 4:
-            self.feature_genes = columns_4
-        else:
-            print('num_feature is between 1 and 4.')
-        self.feature_genes = set(self.feature_genes) - set(to_drop_columns)
-        
+class CensusFilter(BaseEstimator, TransformerMixin):
+    """ A transformer that only keeps the significant genes from the CENSUS database."""
+    def __init__(self):
+        return
+    
 
     def fit(self, X, y=None):
+        self.to_drop_columns = get_underexpressed_columns(X)
+        self.feature_genes = get_census_genes(X,y)
         return self
 
 
@@ -44,11 +74,11 @@ class FeatureFilter(BaseEstimator, TransformerMixin):
     
 
 class Regressor(BaseEstimator, RegressorMixin):
-    def __init__(self, num_feature, to_drop_columns=[]):
-        feature_transformer = FeatureFilter(num_feature, to_drop_columns)
+    def __init__(self):
+        census_filter = CensusFilter()
         scaler = StandardScaler()
         regressor = CoxPHSurvivalAnalysis()
-        self.regr = Pipeline([('feature_transformer', feature_transformer), 
+        self.regr = Pipeline([('census_filter', census_filter), 
                               ('scaler', scaler),
                               ('regressor', regressor)])
         return 
@@ -60,5 +90,6 @@ class Regressor(BaseEstimator, RegressorMixin):
     
     def predict(self, X):
         risk_pred = self.regr.predict(X)
+        # transform a risk into a survival time
         y_pred = (max(risk_pred) + 1) - risk_pred
         return y_pred
