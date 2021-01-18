@@ -1,9 +1,9 @@
 from sksurv.linear_model import CoxPHSurvivalAnalysis
-from problem import get_census
 import numpy as np
 import pandas as pd 
 from scipy.stats import pearsonr
 import math as math
+from problem import to_structured_array
 
 from sklearn.base import BaseEstimator, RegressorMixin, TransformerMixin
 from sklearn.pipeline import Pipeline
@@ -29,20 +29,19 @@ def compute_correlations(X, y_log):
     return corr_df
 
 
-def get_census_genes(X, y):
-    """Get the most statistical reliable cancer driver genes from the CENSUS database."""
-    census = get_census()
+def get_significant_genes(X, E_y):
+    """Get the genes with the correlation the most statistically reliable."""
+    E = E_y[:,0]
+    y = E_y[:,1]
     log_time = np.log(y)
-    genes_consensus = set(census['Gene Symbol'].to_numpy())
-    X_census = X_train.filter(genes_consensus)
-    correlation_df = compute_correlations(X_census, log_time)
+    correlation_df = compute_correlations(X, log_time)
     display_correlations(correlation_df)
 
-    # As before, we use Bonferroni correction
-    bonferroni_alpha = 0.05 / X_census.shape[1]
+    # we use Bonferroni correction
+    bonferroni_alpha = 0.05 / X.shape[1]
     sign_corr = correlation_df[np.abs(correlation_df['p_value']) < bonferroni_alpha]
     sign_correlation_genes = sign_corr.index.to_numpy()
-    genes_of_interest = X_train.filter(sign_correlation_genes)
+    genes_of_interest = X.filter(sign_correlation_genes)
     return genes_of_interest.columns.to_numpy()
 
 
@@ -55,7 +54,7 @@ def get_underexpressed_columns(X):
     return underexpressed_columns
 
 
-class CensusFilter(BaseEstimator, TransformerMixin):
+class GenesFilter(BaseEstimator, TransformerMixin):
     """ A transformer that only keeps the significant genes from the CENSUS database."""
     def __init__(self):
         return
@@ -63,7 +62,8 @@ class CensusFilter(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         self.to_drop_columns = get_underexpressed_columns(X)
-        self.feature_genes = get_census_genes(X,y)
+        self.feature_genes = get_significant_genes(X,y)
+        self.feature_genes = set(self.feature_genes) - set(self.to_drop_columns)
         return self
 
 
@@ -75,10 +75,10 @@ class CensusFilter(BaseEstimator, TransformerMixin):
 
 class Regressor(BaseEstimator, RegressorMixin):
     def __init__(self):
-        census_filter = CensusFilter()
+        genes_filter = GenesFilter()
         scaler = StandardScaler()
         regressor = CoxPHSurvivalAnalysis()
-        self.regr = Pipeline([('census_filter', census_filter), 
+        self.regr = Pipeline([('genes_filter', genes_filter), 
                               ('scaler', scaler),
                               ('regressor', regressor)])
         return 

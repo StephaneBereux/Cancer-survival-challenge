@@ -1,0 +1,17 @@
+name: breast_cancer
+channels:
+  - defaults
+dependencies:
+  - ipython
+  - jupyter
+  - matplotlib
+  - tqdm
+  - numpy
+  - numpydoc
+  - pandas
+  - pip
+  - python
+  - scikit-learn
+  - scipy
+  - seaborn
+  - statsmodels
